@@ -95,6 +95,24 @@ def test_multi_way_overlap_picks_single_winner():
     assert result[0].source == "email_regex"
 
 
+def test_full_rank_key_tie_still_order_independent_via_start_tiebreak():
+    """Regression test: two overlapping entities with identical
+    (tier, confidence, span_length, entity_type, source) but different start
+    offsets must resolve the same way regardless of input order. Before
+    -entity.start was added to _rank_key, max()'s tie-break fell back to
+    "whichever came first in the list" here, reintroducing input-order
+    dependence."""
+    a = PIIEntity("ADDRESS", 0, 10, 0.6, "address_keyword")
+    a2 = PIIEntity("ADDRESS", 3, 13, 0.6, "address_keyword")
+
+    result_forward = merge_entities([a, a2])
+    result_reversed = merge_entities([a2, a])
+
+    assert result_forward == result_reversed
+    assert len(result_forward) == 1
+    assert result_forward[0] == a  # smaller start wins by convention
+
+
 def test_non_overlapping_same_type_entities_stay_separate():
     entities = [
         PIIEntity("ADDRESS", 0, 10, 0.6, "address_keyword"),

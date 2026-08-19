@@ -17,16 +17,24 @@ def _tier(entity: PIIEntity) -> int:
     return 1 if entity.source in _DETERMINISTIC_SOURCES else 0
 
 
-def _rank_key(entity: PIIEntity) -> tuple[int, float, int, str, str]:
-    # (tier, confidence, span length, entity_type, source) — the last two
-    # are a deterministic, order-independent final tiebreak. If every field
-    # ties, the entities are true duplicates and collapsing them is correct.
+def _rank_key(entity: PIIEntity) -> tuple[int, float, int, str, str, int]:
+    # (tier, confidence, span length, entity_type, source, -start) — the
+    # last two are deterministic, entity-intrinsic tiebreaks (not
+    # list-position-dependent). -start is required: two entities can tie on
+    # every prior field (same type/source/confidence/span length) while
+    # having different start offsets, and max()'s tie-break otherwise falls
+    # back to "whichever came first in the list", which is exactly the
+    # input-order dependence this module exists to eliminate. If start is
+    # also equal once everything else ties, end is equal too (same span
+    # length), so the entities are true duplicates and collapsing them is
+    # correct.
     return (
         _tier(entity),
         entity.confidence,
         entity.end - entity.start,
         entity.entity_type,
         entity.source,
+        -entity.start,
     )
 
 
