@@ -33,10 +33,6 @@ class Session:
 
     __str__ = __repr__
 
-    @property
-    def __getstate__(self) -> None:
-        raise AttributeError("Session instances cannot be pickled")
-
 
 @dataclass
 class ProtectedMessages:
