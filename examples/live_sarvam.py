@@ -10,6 +10,8 @@ Run: python examples/live_sarvam.py
 """
 from __future__ import annotations
 
+import sys
+
 from dotenv import load_dotenv
 
 from bharatguard import PIIGuard
@@ -36,7 +38,11 @@ def main() -> None:
     print("4. Verified: no raw Aadhaar digits present in the sanitized payload.\n")
 
     # 5. Real network call.
-    client = SarvamClient()
+    try:
+        client = SarvamClient()
+    except ValueError as exc:
+        print(f"{exc}")
+        sys.exit(1)
     response = client.chat(protected.messages)
 
     # 6. Print the response.

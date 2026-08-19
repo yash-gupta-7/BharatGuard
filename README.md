@@ -246,6 +246,7 @@ requirement.
 ## Streamlit demo
 
 ```bash
+pip install -e ".[demo]"
 streamlit run demo/app.py
 ```
 
