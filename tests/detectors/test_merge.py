@@ -1,5 +1,3 @@
-import itertools
-
 from bharatguard.models import PIIEntity
 from bharatguard.detectors.merge import merge_entities
 
@@ -105,6 +103,36 @@ def test_non_overlapping_same_type_entities_stay_separate():
     result = merge_entities(entities)
     assert len(result) == 2
     assert [e.start for e in result] == [0, 50]
+
+
+def test_transitive_overlap_chain_does_not_drop_non_overlapping_entity():
+    """Regression test for a real bug: a single-pass sweep that only compares
+    an incoming candidate against the FIRST overlapping entity in the kept
+    result can evict a non-overlapping entity from a 3+ chain.
+
+    Chain: A overlaps B, B overlaps C, but A does NOT overlap C.
+      A = ADDRESS [0,15)  conf 0.50 (contextual, tier 0)
+      B = EMAIL   [10,25) conf 0.90 (deterministic, tier 1)
+      C = PHONE   [20,35) conf 0.95 (deterministic, tier 1)
+
+    Under the old single-pass sweep: A is kept first (no prior overlap), then
+    B overlaps A and outranks it (tier 1 > tier 0) so B replaces A in the
+    result -- A is now gone entirely. Then C overlaps B (the entity currently
+    sitting in that slot) and outranks it (higher confidence), replacing B.
+    Final (buggy) result: {C} only -- A is silently lost even though A never
+    conflicted with C.
+
+    Correct behaviour: B is strictly dominated by both A's-non-conflict-zone
+    and C, and gets dropped entirely once compared against the true global
+    winner (C). A, never overlapping C, must survive alongside it.
+    """
+    a = PIIEntity("ADDRESS", 0, 15, 0.50, "address_keyword")
+    b = PIIEntity("EMAIL", 10, 25, 0.90, "email_regex")
+    c = PIIEntity("PHONE", 20, 35, 0.95, "phone_regex")
+
+    result = merge_entities([a, b, c])
+
+    assert result == [a, c]
 
 
 def test_output_invariant_to_input_order():

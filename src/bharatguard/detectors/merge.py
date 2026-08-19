@@ -31,22 +31,21 @@ def _rank_key(entity: PIIEntity) -> tuple[int, float, int, str, str]:
 
 
 def merge_entities(entities: list[PIIEntity]) -> list[PIIEntity]:
-    # Sort by start ascending, then span length descending, then the same
-    # deterministic tiebreak key so equal-start candidates are processed in
-    # a fixed order regardless of input order.
-    ordered = sorted(
-        entities,
-        key=lambda e: (e.start, -(e.end - e.start), e.entity_type, e.source),
-    )
-    result: list[PIIEntity] = []
-    for entity in ordered:
-        overlap_idx = next(
-            (i for i, kept in enumerate(result) if kept.start < entity.end and entity.start < kept.end),
-            None,
-        )
-        if overlap_idx is None:
-            result.append(entity)
-            continue
-        if _rank_key(entity) > _rank_key(result[overlap_idx]):
-            result[overlap_idx] = entity
-    return sorted(result, key=lambda e: e.start)
+    # Repeatedly take the single globally-best-ranked remaining candidate,
+    # keep it, and drop everything that overlaps it. A one-pass sweep that
+    # only compares against the first overlapping *kept* entity can drop a
+    # non-overlapping entity in a transitive chain (A overlaps B, B overlaps
+    # C, A does not overlap C): if B beats A it evicts A from the result
+    # entirely, then if C beats B it evicts B too, silently losing A even
+    # though A never conflicted with C. Picking the global max each round
+    # and only removing entities that actually overlap it avoids that.
+    remaining = list(entities)
+    kept: list[PIIEntity] = []
+    while remaining:
+        winner = max(remaining, key=_rank_key)
+        kept.append(winner)
+        remaining = [
+            e for e in remaining
+            if e is not winner and not (winner.start < e.end and e.start < winner.end)
+        ]
+    return sorted(kept, key=lambda e: e.start)
