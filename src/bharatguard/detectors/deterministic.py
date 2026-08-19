@@ -53,8 +53,8 @@ def _verhoeff_valid(digits: str) -> bool:
 _AADHAAR_RE = re.compile(r"(?<!\d)([2-9]\d{3}[ -]?\d{4}[ -]?\d{4})(?!\d)")
 _PAN_RE = re.compile(r"(?<![A-Z0-9])([A-Z]{3}[PCHABGJLFT][A-Z]\d{4}[A-Z])(?![A-Z0-9])")
 _PHONE_RE = re.compile(r"(?<!\d)(?:\+91[ -]?|0)?([6-9]\d{4}[ -]?\d{5})(?!\d)")
-_EMAIL_RE = re.compile(r"(?<![\w.])([A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})(?![\w.])")
-_UPI_RE = re.compile(r"(?<![\w.])([A-Za-z0-9.\-_]{2,}@[A-Za-z][A-Za-z0-9]{2,})(?![\w.])")
+_EMAIL_RE = re.compile(r"(?<![\w.])([A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})(?![A-Za-z0-9_])")
+_UPI_RE = re.compile(r"(?<![\w.])([A-Za-z0-9.\-_]{2,}@[A-Za-z][A-Za-z0-9]{2,})(?!\w)(?!\.[A-Za-z0-9])")
 _IFSC_RE = re.compile(r"(?<![A-Z0-9])([A-Z]{4}0[A-Z0-9]{6})(?![A-Z0-9])")
 
 

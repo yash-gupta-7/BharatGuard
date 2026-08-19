@@ -236,6 +236,103 @@ def test_upi_rejects_actual_email_shape():
 
 
 # ---------------------------------------------------------------------------
+# Email/UPI sentence-final-punctuation regression tests (Task 11)
+# ---------------------------------------------------------------------------
+
+def test_email_trailing_period_excluded_from_offsets():
+    text = "Contact me at priya.verma@gmail.com."
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "priya.verma@gmail.com"
+
+
+def test_email_trailing_comma_excluded_from_offsets():
+    text = "Email me at priya.verma@gmail.com, thanks."
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "priya.verma@gmail.com"
+
+
+def test_email_trailing_exclamation_excluded_from_offsets():
+    text = "Email me at priya.verma@gmail.com!"
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "priya.verma@gmail.com"
+
+
+def test_email_trailing_question_mark_excluded_from_offsets():
+    text = "Is your email priya.verma@gmail.com?"
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "priya.verma@gmail.com"
+
+
+def test_email_in_parentheses_excludes_closing_paren():
+    text = "(reach me at test@example.com)"
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "test@example.com"
+
+
+def test_email_no_trailing_punctuation_still_detected():
+    text = "my email is test.user@example.co.in for contact"
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "test.user@example.co.in"
+
+
+def test_email_multi_label_domain_with_trailing_period():
+    text = "contact admin@mail.example.co.in."
+    hits = EmailDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "admin@mail.example.co.in"
+
+
+def test_upi_trailing_period_excluded_from_offsets():
+    text = "pay to rahul123@okhdfcbank."
+    hits = UpiDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "rahul123@okhdfcbank"
+
+
+def test_upi_trailing_comma_excluded_from_offsets():
+    text = "pay to rahul123@okhdfcbank, please"
+    hits = UpiDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "rahul123@okhdfcbank"
+
+
+def test_upi_does_not_leak_into_real_email_domain_label():
+    # Critical regression-prevention test: relaxing the UPI trailing
+    # lookahead to allow a sentence-final "." must NOT also allow it to
+    # match into a real email's domain label (e.g. "example" out of
+    # "user@example.com"). Only the EMAIL detector should fire here.
+    text = "user@example.com"
+    upi_hits = UpiDetector().detect(text)
+    email_hits = EmailDetector().detect(text)
+    assert upi_hits == []
+    assert len(email_hits) == 1
+    assert text[email_hits[0].start:email_hits[0].end] == "user@example.com"
+
+
+def test_upi_no_trailing_punctuation_still_detected():
+    text = "send money to priya.k@ybl now"
+    hits = UpiDetector().detect(text)
+    assert len(hits) == 1
+    e = hits[0]
+    assert text[e.start:e.end] == "priya.k@ybl"
+
+
+# ---------------------------------------------------------------------------
 # IFSC
 # ---------------------------------------------------------------------------
 
