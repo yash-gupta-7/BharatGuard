@@ -1,0 +1,51 @@
+{"id": "aadhaar_english_valid_plain_001", "text": "My Aadhaar number is 234123412346.", "entities": [{"type": "AADHAAR", "value": "234123412346"}], "category": "aadhaar_english"}
+{"id": "aadhaar_english_valid_spaced_002", "text": "Please note Aadhaar 5000 4000 3006 for verification.", "entities": [{"type": "AADHAAR", "value": "5000 4000 3006"}], "category": "aadhaar_spaced"}
+{"id": "aadhaar_separator_hyphen_003", "text": "Aadhaar: 6789-0123-4502 confirmed.", "entities": [{"type": "AADHAAR", "value": "6789-0123-4502"}], "category": "aadhaar_separator"}
+{"id": "aadhaar_indic_digit_004", "text": "mera aadhaar hai ९१२३४५६७८९०५ theek hai", "entities": [{"type": "AADHAAR", "value": "९१२३४५६७८९०५"}], "category": "aadhaar_indic_digit"}
+{"id": "aadhaar_hinglish_005", "text": "mera aadhaar number hai 345678912303 sir", "entities": [{"type": "AADHAAR", "value": "345678912303"}], "category": "aadhaar_hinglish"}
+{"id": "aadhaar_invalid_checksum_false_positive_006", "text": "random 234123412340 here", "entities": [], "category": "aadhaar_false_positive"}
+{"id": "aadhaar_starts_with_0_false_positive_007", "text": "account 012345678901 is not aadhaar", "entities": [], "category": "aadhaar_false_positive"}
+{"id": "aadhaar_wrong_length_false_positive_008", "text": "order number 23412341 today", "entities": [], "category": "aadhaar_false_positive"}
+{"id": "aadhaar_valid_at_string_start_009", "text": "789123456704 is my Aadhaar for KYC.", "entities": [{"type": "AADHAAR", "value": "789123456704"}], "category": "aadhaar_english"}
+{"id": "aadhaar_valid_embedded_context_010", "text": "Please link Aadhaar 678901234502 with your bank account.", "entities": [{"type": "AADHAAR", "value": "678901234502"}], "category": "aadhaar_english"}
+{"id": "pan_valid_basic_011", "text": "My PAN is ABCPE1234F for tax filing.", "entities": [{"type": "PAN", "value": "ABCPE1234F"}], "category": "pan_valid"}
+{"id": "pan_valid_another_holder_code_012", "text": "Company PAN: XYZCA5678L", "entities": [{"type": "PAN", "value": "XYZCA5678L"}], "category": "pan_valid"}
+{"id": "pan_invalid_holder_type_false_positive_013", "text": "code ABCZE1234F is not valid", "entities": [], "category": "pan_false_positive"}
+{"id": "pan_contextual_014", "text": "kripya apna PAN number DEFPH4321K share karein", "entities": [{"type": "PAN", "value": "DEFPH4321K"}], "category": "pan_contextual"}
+{"id": "pan_false_positive_random_string_015", "text": "Order ID: ABCDE12345 confirmed", "entities": [], "category": "pan_false_positive"}
+{"id": "pan_hinglish_016", "text": "mera PAN card number GHIJT7890M hai", "entities": [{"type": "PAN", "value": "GHIJT7890M"}], "category": "pan_hinglish"}
+{"id": "phone_standard_017", "text": "call me at 9876543210 today", "entities": [{"type": "PHONE", "value": "9876543210"}], "category": "phone_standard"}
+{"id": "phone_plus91_018", "text": "reach me on +91 9876543211", "entities": [{"type": "PHONE", "value": "9876543211"}], "category": "phone_plus91"}
+{"id": "phone_spaced_019", "text": "phone: 98765 43212", "entities": [{"type": "PHONE", "value": "98765 43212"}], "category": "phone_spaced"}
+{"id": "phone_hinglish_020", "text": "mera phone number hai 9876543213 aap call karo", "entities": [{"type": "PHONE", "value": "9876543213"}], "category": "phone_hinglish"}
+{"id": "phone_embedded_false_positive_021", "text": "reference 69876543211 for this order", "entities": [], "category": "phone_false_positive"}
+{"id": "phone_invalid_leading_digit_false_positive_022", "text": "call 5876543214 now", "entities": [], "category": "phone_false_positive"}
+{"id": "email_valid_023", "text": "reach me at rahul.sharma@gmail.com please", "entities": [{"type": "EMAIL", "value": "rahul.sharma@gmail.com"}], "category": "email_valid"}
+{"id": "email_punctuation_024", "text": "my email is test.user+tag@example.co.in for contact", "entities": [{"type": "EMAIL", "value": "test.user+tag@example.co.in"}], "category": "email_punctuation"}
+{"id": "email_hinglish_025", "text": "mera email id hai priya123@yahoo.com bhej dena", "entities": [{"type": "EMAIL", "value": "priya123@yahoo.com"}], "category": "email_hinglish"}
+{"id": "email_false_positive_026", "text": "Follow @channel for updates, not an email.", "entities": [], "category": "email_false_positive"}
+{"id": "email_known_bug_trailing_period_027", "text": "Please email me at priya.verma@gmail.com.", "entities": [{"type": "EMAIL", "value": "priya.verma@gmail.com"}], "category": "email_known_bug_trailing_period"}
+{"id": "upi_valid_028", "text": "pay to rahul123@okhdfcbank now", "entities": [{"type": "UPI", "value": "rahul123@okhdfcbank"}], "category": "upi_valid"}
+{"id": "upi_ambiguous_with_email_029", "text": "send money to priya.k@ybl", "entities": [{"type": "UPI", "value": "priya.k@ybl"}], "category": "upi_ambiguous_with_email"}
+{"id": "upi_false_positive_030", "text": "Ping @teamlead on Slack for approval.", "entities": [], "category": "upi_false_positive"}
+{"id": "ifsc_valid_031", "text": "IFSC code: HDFC0001234 for NEFT transfer", "entities": [{"type": "IFSC", "value": "HDFC0001234"}], "category": "ifsc_valid"}
+{"id": "ifsc_invalid_structure_false_positive_032", "text": "branch code HDFC1001234 invalid", "entities": [], "category": "ifsc_false_positive"}
+{"id": "ifsc_contextual_033", "text": "kripya apna bank ka IFSC SBIN0123456 batayein", "entities": [{"type": "IFSC", "value": "SBIN0123456"}], "category": "ifsc_contextual"}
+{"id": "person_english_034", "text": "Please schedule a meeting with Sarah Johnson tomorrow.", "entities": [{"type": "PERSON", "value": "Sarah Johnson"}], "category": "person_english"}
+{"id": "person_multiple_names_035", "text": "The report was reviewed by Rajesh Kumar and Anita Desai.", "entities": [{"type": "PERSON", "value": "Rajesh Kumar"}, {"type": "PERSON", "value": "Anita Desai"}], "category": "person_multiple"}
+{"id": "person_hinglish_known_weakness_036", "text": "Mera naam Amit Verma hai aur main Delhi mein rehta hoon.", "entities": [{"type": "PERSON", "value": "Amit Verma"}], "category": "person_hinglish"}
+{"id": "person_devanagari_known_limitation_037", "text": "मेरा नाम राहुल शर्मा है।", "entities": [{"type": "PERSON", "value": "राहुल शर्मा"}], "category": "person_devanagari"}
+{"id": "address_indian_style_038", "text": "I live at 42 MG Road, Bangalore 560001, India.", "entities": [{"type": "ADDRESS", "value": "560001"}], "category": "address_indian_style"}
+{"id": "address_roads_039", "text": "My house is on Ashok Nagar Main Road near the market.", "entities": [{"type": "ADDRESS", "value": "My house is on Ashok Nagar Main Road near the market"}], "category": "address_roads"}
+{"id": "address_sectors_known_weakness_040", "text": "Our office is located in Sector 62, Noida Extension.", "entities": [{"type": "ADDRESS", "value": "Sector 62, Noida Extension"}], "category": "address_sectors"}
+{"id": "address_colonies_041", "text": "She grew up in Green Park Colony during the nineties.", "entities": [{"type": "ADDRESS", "value": "She grew up in Green Park Colony during the nineties"}], "category": "address_colonies"}
+{"id": "address_nagars_known_weakness_042", "text": "Please send the parcel to Lajpat Nagar market area.", "entities": [{"type": "ADDRESS", "value": "Lajpat Nagar market area"}], "category": "address_nagars"}
+{"id": "address_pin_with_context_043", "text": "My pincode is 560034 for delivery.", "entities": [{"type": "ADDRESS", "value": "560034"}], "category": "address_pin_with_context"}
+{"id": "address_hinglish_known_weakness_044", "text": "mera address hai 12 Nehru Marg, Lucknow", "entities": [{"type": "ADDRESS", "value": "12 Nehru Marg, Lucknow"}], "category": "address_hinglish"}
+{"id": "address_false_positive_keyword_045", "text": "This road trip was amazing, best drive ever.", "entities": [], "category": "address_false_positive"}
+{"id": "mixed_multi_type_046", "text": "Hi, I'm Rohan Mehta. My Aadhaar is 234123412346, PAN ABCPE1234F, phone 9876543210, and email rohan.mehta@gmail.com for verification.", "entities": [{"type": "PERSON", "value": "Rohan Mehta"}, {"type": "AADHAAR", "value": "234123412346"}, {"type": "PAN", "value": "ABCPE1234F"}, {"type": "PHONE", "value": "9876543210"}, {"type": "EMAIL", "value": "rohan.mehta@gmail.com"}], "category": "mixed_multi_type"}
+{"id": "mixed_multi_type_047", "text": "Please contact Priya Nair at priya.nair@outlook.com or 9123456780 regarding PAN XYZCA5678L.", "entities": [{"type": "PERSON", "value": "Priya Nair"}, {"type": "EMAIL", "value": "priya.nair@outlook.com"}, {"type": "PHONE", "value": "9123456780"}, {"type": "PAN", "value": "XYZCA5678L"}], "category": "mixed_multi_type"}
+{"id": "mixed_multi_type_048", "text": "Transfer to IFSC HDFC0001234 and UPI id priya.k@ybl for account holder Kavya Singh.", "entities": [{"type": "IFSC", "value": "HDFC0001234"}, {"type": "UPI", "value": "priya.k@ybl"}, {"type": "PERSON", "value": "Kavya Singh"}], "category": "mixed_multi_type"}
+{"id": "general_false_positive_order_tracking_049", "text": "My order number is 4021983456 and tracking ID is TRK998877.", "entities": [], "category": "general_false_positive"}
+{"id": "general_false_positive_version_string_050", "text": "Version 9.8.7.6543210 was released last week.", "entities": [], "category": "general_false_positive"}
+{"id": "general_false_positive_hashtag_year_051", "text": "#throwback to 1998, best year ever!", "entities": [], "category": "general_false_positive"}
