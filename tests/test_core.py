@@ -3,12 +3,15 @@ are synthetic. The Aadhaar number is a fabricated number that happens to
 satisfy the Verhoeff checksum algorithm structurally -- it is not a real
 person's number."""
 import copy
+import inspect
 import re
 
 import pytest
 
 from bharatguard import PIIGuard, PolicyConfig, Session
 from bharatguard.masking.mask import REDACTED_MARKER
+from bharatguard.integrations.sarvam import FakeSarvamClient
+from bharatguard import core
 
 SYNTHETIC_AADHAAR = "234123412346"  # passes Verhoeff, synthetic
 SYNTHETIC_PAN = "ABCPD1234E"
@@ -297,3 +300,111 @@ def test_privacy_invariant_no_raw_value_leaks_for_mask_or_tokenize():
     for variant in formatted_variants:
         assert _canon(variant) not in _canon(all_content)
         assert _canon(variant) not in _canon(session_dump)
+
+
+# ---------------------------------------------------------------------------
+# guard.chat() tests (8 tests)
+# ---------------------------------------------------------------------------
+
+def test_chat_calls_protect_before_client_chat():
+    """Test that guard.chat() calls protect() before client.chat(),
+    so client receives already-masked/tokenized content, not raw input."""
+    guard = PIIGuard()
+    fake_client = FakeSarvamClient(chat_response="Got it")
+    messages = [{"role": "user", "content": f"phone {SYNTHETIC_PHONE_1}"}]
+
+    response = guard.chat(client=fake_client, messages=messages)
+
+    # Client should have received protected messages (token, not raw phone)
+    received = fake_client.last_messages[0]["content"]
+    assert SYNTHETIC_PHONE_1 not in received
+    assert "<PHONE_1>" in received
+
+
+def test_chat_client_never_receives_raw_pii():
+    """Test that client receives protected messages, never original PII."""
+    guard = PIIGuard()
+    fake_client = FakeSarvamClient(chat_response="acknowledged")
+    messages = [{"role": "user", "content": f"my aadhaar is {SYNTHETIC_AADHAAR}"}]
+
+    guard.chat(client=fake_client, messages=messages)
+
+    received_content = fake_client.last_messages[0]["content"]
+    assert SYNTHETIC_AADHAAR not in received_content
+    assert REDACTED_MARKER in received_content
+
+
+def test_chat_response_correctly_restored():
+    """Test that returned response has tokens correctly restored to original values."""
+    guard = PIIGuard()
+    # Client echoes back the token it received
+    fake_client = FakeSarvamClient(chat_response=f"Your number is <PHONE_1>")
+    messages = [{"role": "user", "content": f"my phone is {SYNTHETIC_PHONE_1}"}]
+
+    response = guard.chat(client=fake_client, messages=messages)
+
+    # Response should have the token replaced with the original value
+    assert SYNTHETIC_PHONE_1 in response
+    assert "<PHONE_1>" not in response
+
+
+def test_chat_protect_failure_prevents_client_call():
+    """Test that if protect() raises, client.chat() is never called."""
+    guard = PIIGuard()
+    fake_client = FakeSarvamClient()
+
+    # Pass a malformed message that protect() will reject
+    messages = [{"role": "user"}]  # missing "content" key
+
+    with pytest.raises(KeyError):
+        guard.chat(client=fake_client, messages=messages)
+
+    # Client should never have been called
+    assert fake_client.last_messages == []
+
+
+def test_chat_client_failure_propagates_without_retry():
+    """Test that if client.chat() raises, guard.chat() does not retry
+    with unprotected messages."""
+    guard = PIIGuard()
+
+    class FailingClient:
+        def chat(self, messages, model="sarvam-105b"):
+            raise RuntimeError("API error")
+
+    messages = [{"role": "user", "content": f"phone {SYNTHETIC_PHONE_1}"}]
+
+    with pytest.raises(RuntimeError):
+        guard.chat(client=FailingClient(), messages=messages)
+
+
+def test_chat_unknown_tokens_left_untouched():
+    """Test that unknown tokens in the client's response are left untouched."""
+    guard = PIIGuard()
+    # Client returns a token that's not in the session (unknown/foreign token)
+    fake_client = FakeSarvamClient(chat_response="Your token is <PHONE_99>")
+    messages = [{"role": "user", "content": f"my phone is {SYNTHETIC_PHONE_1}"}]
+
+    response = guard.chat(client=fake_client, messages=messages)
+
+    # Unknown token should be left as-is
+    assert "<PHONE_99>" in response
+
+
+def test_chat_original_messages_not_mutated():
+    """Test that caller's original messages are not mutated by guard.chat()."""
+    guard = PIIGuard()
+    fake_client = FakeSarvamClient(chat_response="OK")
+    original = [{"role": "user", "content": f"pan {SYNTHETIC_PAN}"}]
+    snapshot = copy.deepcopy(original)
+
+    guard.chat(client=fake_client, messages=original)
+
+    assert original == snapshot
+
+
+def test_chat_sarvamai_not_imported_in_core():
+    """Test that sarvamai SDK is not imported in core.py."""
+    # Check that "sarvamai" does not appear in the imports of core module
+    source = inspect.getsource(core)
+    assert "sarvamai" not in source.lower()

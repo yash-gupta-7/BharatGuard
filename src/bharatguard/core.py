@@ -115,3 +115,21 @@ class PIIGuard:
             return match.group(0) if original is None else original
 
         return _TOKEN_RE.sub(_replace, response)
+
+    def chat(self, client, messages: list[dict]) -> str:
+        """Convenience API composing protect(), client.chat(), and restore().
+
+        Masks PII in the input messages, sends protected content to the client,
+        and restores original values in the response. The client parameter is
+        duck-typed: it must have a .chat(messages=...) method matching the
+        contract of SarvamClient/FakeSarvamClient, returning a ChatResponse
+        with .choices[0].message.content as the assistant text.
+
+        Raises if protect() fails (exception propagates; client.chat() is not
+        called). Raises if client.chat() fails (no retry with unprotected
+        messages; exception propagates as-is). Unknown tokens in the response
+        are left untouched per restore()'s behavior.
+        """
+        protected = self.protect(messages)
+        response = client.chat(messages=protected.messages)
+        return self.restore(response.choices[0].message.content, protected.session)
