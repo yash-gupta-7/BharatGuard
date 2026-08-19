@@ -256,6 +256,19 @@ def test_replacement_ordering_no_offset_corruption():
     assert SYNTHETIC_PHONE_1 not in content
 
 
+def test_separate_protect_calls_get_isolated_sessions():
+    guard = PIIGuard()
+    protected1 = guard.protect([{"role": "user", "content": f"phone {SYNTHETIC_PHONE_1}"}])
+    protected2 = guard.protect([{"role": "user", "content": f"phone {SYNTHETIC_PHONE_2}"}])
+    assert protected1.session is not protected2.session
+    # token numbering restarts for the second call -- no leakage of the
+    # first call's token_registry/session state into the second
+    assert "<PHONE_1>" in protected2.messages[0]["content"]
+    assert protected2.session.lookup("PHONE_1") == SYNTHETIC_PHONE_2
+    # the first session has no knowledge of the second call's value
+    assert protected1.session.lookup("PHONE_1") == SYNTHETIC_PHONE_1
+
+
 # ---------------------------------------------------------------------------
 # Critical privacy invariant test (thorough)
 # ---------------------------------------------------------------------------
