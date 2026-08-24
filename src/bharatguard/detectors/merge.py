@@ -8,8 +8,10 @@ from __future__ import annotations
 from bharatguard.models import PIIEntity
 
 _DETERMINISTIC_SOURCES = {
-    "aadhaar_regex", "pan_regex", "phone_regex",
+    "aadhaar_regex_verhoeff", "pan_regex", "phone_regex",
     "email_regex", "upi_regex", "ifsc_regex",
+    "api_key_openai", "api_key_aws", "api_key_bearer", "api_key_generic_assignment",
+    "card_regex_luhn",
 }
 
 

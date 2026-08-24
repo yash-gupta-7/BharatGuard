@@ -1,6 +1,6 @@
 from bharatguard.detectors.deterministic import (
     AadhaarDetector, PanDetector, PhoneDetector, EmailDetector,
-    UpiDetector, IfscDetector,
+    UpiDetector, IfscDetector, ApiKeyDetector, CardNumberDetector,
 )
 from bharatguard.normalization.normalize import normalize
 
@@ -353,6 +353,137 @@ def test_ifsc_rejects_wrong_5th_char():
     # 5th char must be literal '0' per NPCI spec
     hits = IfscDetector().detect("code: HDFC1001234")
     assert len(hits) == 0
+
+
+# ---------------------------------------------------------------------------
+# API key / secret
+# ---------------------------------------------------------------------------
+
+def test_api_key_detects_openai_style():
+    text = "use sk-abcdEFGH1234567890ijklMNOP as the key"
+    hits = ApiKeyDetector().detect(text)
+    assert len(hits) == 1
+    assert hits[0].entity_type == "API_KEY"
+    assert text[hits[0].start:hits[0].end] == "sk-abcdEFGH1234567890ijklMNOP"
+
+
+def test_api_key_detects_aws_access_key():
+    # AWS's own documentation example key -- a publicly known placeholder,
+    # not a real credential: https://docs.aws.amazon.com/IAM/
+    text = "AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE"
+    hits = ApiKeyDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == "AKIAIOSFODNN7EXAMPLE"
+
+
+def test_api_key_detects_bearer_token():
+    text = "Authorization: Bearer abcdefghij1234567890XYZ"
+    hits = ApiKeyDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == "abcdefghij1234567890XYZ"
+
+
+def test_api_key_detects_generic_assignment():
+    text = 'config: api_key="myTestSecretValue1234"'
+    hits = ApiKeyDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == "myTestSecretValue1234"
+
+
+def test_api_key_detects_generic_token_colon_form():
+    text = "token: abcdefghijklmnop1234"
+    hits = ApiKeyDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == "abcdefghijklmnop1234"
+
+
+def test_api_key_rejects_short_assignment():
+    hits = ApiKeyDetector().detect("key=short")
+    assert len(hits) == 0
+
+
+def test_api_key_rejects_plain_english_sentence():
+    hits = ApiKeyDetector().detect("That secret is safe between us for now.")
+    assert len(hits) == 0
+
+
+def test_api_key_at_start_middle_end_of_text():
+    prefix_text = "sk-abcdEFGH1234567890ijklMNOP is the new key"
+    middle_text = "please rotate sk-abcdEFGH1234567890ijklMNOP right away"
+    suffix_text = "the new key is sk-abcdEFGH1234567890ijklMNOP"
+    for text in (prefix_text, middle_text, suffix_text):
+        hits = ApiKeyDetector().detect(text)
+        assert len(hits) == 1
+        assert text[hits[0].start:hits[0].end] == "sk-abcdEFGH1234567890ijklMNOP"
+
+
+# ---------------------------------------------------------------------------
+# Card number
+# ---------------------------------------------------------------------------
+# Canonical, publicly-published test card numbers (Stripe/PayPal test docs)
+# -- Luhn-valid, not real credentials, same convention as this project's
+# use of AWS's own AKIAIOSFODNN7EXAMPLE for the API-key detector tests.
+VALID_VISA_TEST_CARD = "4111111111111111"
+VALID_AMEX_TEST_CARD = "378282246310005"
+VALID_MASTERCARD_TEST_CARD = "5555555555554444"
+
+
+def test_card_detects_unformatted_visa():
+    text = f"card number {VALID_VISA_TEST_CARD} on file"
+    hits = CardNumberDetector().detect(text)
+    assert len(hits) == 1
+    assert hits[0].entity_type == "CARD_NUMBER"
+    assert text[hits[0].start:hits[0].end] == VALID_VISA_TEST_CARD
+
+
+def test_card_detects_space_grouped_visa():
+    text = "card number 4111 1111 1111 1111 on file"
+    hits = CardNumberDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == "4111 1111 1111 1111"
+
+
+def test_card_detects_hyphen_grouped_mastercard():
+    text = "pay with 5555-5555-5555-4444 please"
+    hits = CardNumberDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == "5555-5555-5555-4444"
+
+
+def test_card_detects_15_digit_amex():
+    text = f"amex {VALID_AMEX_TEST_CARD} expires soon"
+    hits = CardNumberDetector().detect(text)
+    assert len(hits) == 1
+    assert text[hits[0].start:hits[0].end] == VALID_AMEX_TEST_CARD
+
+
+def test_card_rejects_invalid_luhn_checksum():
+    # last digit changed from a valid test card -- breaks the checksum
+    hits = CardNumberDetector().detect("card 4111111111111112 declined")
+    assert len(hits) == 0
+
+
+def test_card_rejects_short_digit_run():
+    # 12 digits -- below the 13-digit minimum, not card-shaped
+    hits = CardNumberDetector().detect("reference number 411111111111")
+    assert len(hits) == 0
+
+
+def test_card_does_not_collide_with_aadhaar():
+    # A valid Aadhaar (12 digits) must not also be flagged as a card
+    text = f"aadhaar {VALID_AADHAAR_1}"
+    card_hits = CardNumberDetector().detect(text)
+    assert len(card_hits) == 0
+
+
+def test_card_at_start_middle_end_of_text():
+    prefix = f"{VALID_VISA_TEST_CARD} is the card on file"
+    middle = f"please use {VALID_VISA_TEST_CARD} for this order"
+    suffix = f"the card on file is {VALID_VISA_TEST_CARD}"
+    for text in (prefix, middle, suffix):
+        hits = CardNumberDetector().detect(text)
+        assert len(hits) == 1
+        assert text[hits[0].start:hits[0].end] == VALID_VISA_TEST_CARD
 
 
 # ---------------------------------------------------------------------------

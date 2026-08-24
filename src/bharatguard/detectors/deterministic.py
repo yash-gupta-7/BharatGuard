@@ -47,6 +47,20 @@ def _verhoeff_valid(digits: str) -> bool:
     return c == 0
 
 
+def _luhn_valid(digits: str) -> bool:
+    """True if `digits` satisfies the Luhn checksum (ISO/IEC 7812-1) --
+    the check-digit standard used by all major payment card networks."""
+    total = 0
+    for i, ch in enumerate(reversed(digits)):
+        d = int(ch)
+        if i % 2 == 1:
+            d *= 2
+            if d > 9:
+                d -= 9
+        total += d
+    return total % 10 == 0
+
+
 # ---------------------------------------------------------------------------
 # Regex patterns
 # ---------------------------------------------------------------------------
@@ -56,6 +70,19 @@ _PHONE_RE = re.compile(r"(?<!\d)(?:\+91[ -]?|0)?([6-9]\d{4}[ -]?\d{5})(?!\d)")
 _EMAIL_RE = re.compile(r"(?<![\w.])([A-Za-z0-9._%+-]+@(?:[A-Za-z0-9-]+\.)+[A-Za-z]{2,})(?![A-Za-z0-9_])")
 _UPI_RE = re.compile(r"(?<![\w.])([A-Za-z0-9.\-_]{2,}@[A-Za-z][A-Za-z0-9]{2,})(?!\w)(?!\.[A-Za-z0-9])")
 _IFSC_RE = re.compile(r"(?<![A-Z0-9])([A-Z]{4}0[A-Z0-9]{6})(?![A-Z0-9])")
+
+# Common secret/API-key shapes. Heuristic, not an exhaustive secret scanner --
+# same documented-ambiguity spirit as the UPI/email overlap note above.
+_OPENAI_KEY_RE = re.compile(r"(?<![\w-])(sk-[A-Za-z0-9]{20,})(?![\w-])")
+_AWS_ACCESS_KEY_RE = re.compile(r"(?<!\w)(AKIA[0-9A-Z]{16})(?!\w)")
+_BEARER_TOKEN_RE = re.compile(r"(?i:bearer)\s+([A-Za-z0-9\-_.]{20,})")
+_GENERIC_SECRET_ASSIGNMENT_RE = re.compile(
+    r"(?i:\b(?:api[_-]?key|secret|token|password)\b\s*[:=]\s*[\"']?)([A-Za-z0-9_\-]{16,})(?=[\"']?(?:\s|$|[,;)]))"
+)
+
+# Payment card numbers: 13-19 digits (covers Visa/Mastercard/Amex/RuPay/
+# Discover ranges), optionally grouped with spaces or hyphens.
+_CARD_RE = re.compile(r"(?<![\d\-])(\d(?:[ -]?\d){12,18})(?![\d\-])")
 
 
 class AadhaarDetector:
@@ -123,7 +150,45 @@ class IfscDetector:
         ]
 
 
+class ApiKeyDetector:
+    """Detects common secret/API-key shapes: OpenAI-style (sk-...), AWS
+    access keys (AKIA...), Bearer tokens, and generic key=value/key:value
+    assignments. A heuristic pattern-matcher, not an exhaustive secret
+    scanner -- real secrets come in far more shapes than these four."""
+
+    def detect(self, text: str) -> list[PIIEntity]:
+        out = []
+        for m in _OPENAI_KEY_RE.finditer(text):
+            out.append(PIIEntity("API_KEY", m.start(1), m.end(1), 0.9, "api_key_openai"))
+        for m in _AWS_ACCESS_KEY_RE.finditer(text):
+            out.append(PIIEntity("API_KEY", m.start(1), m.end(1), 0.9, "api_key_aws"))
+        for m in _BEARER_TOKEN_RE.finditer(text):
+            out.append(PIIEntity("API_KEY", m.start(1), m.end(1), 0.85, "api_key_bearer"))
+        for m in _GENERIC_SECRET_ASSIGNMENT_RE.finditer(text):
+            out.append(PIIEntity("API_KEY", m.start(1), m.end(1), 0.7, "api_key_generic_assignment"))
+        return out
+
+
+class CardNumberDetector:
+    """Detects payment card numbers via shape + Luhn checksum validation
+    -- the same "reject shape matches that fail the real check digit"
+    approach used for Aadhaar. 13-19 digits, optionally grouped with
+    spaces/hyphens (e.g. "4111 1111 1111 1111")."""
+
+    def detect(self, text: str) -> list[PIIEntity]:
+        out = []
+        for m in _CARD_RE.finditer(text):
+            digits = re.sub(r"[ -]", "", m.group(1))
+            if not (13 <= len(digits) <= 19):
+                continue
+            if not _luhn_valid(digits):
+                continue
+            out.append(PIIEntity("CARD_NUMBER", m.start(1), m.end(1), 0.9, "card_regex_luhn"))
+        return out
+
+
 DETERMINISTIC_DETECTORS = [
     AadhaarDetector(), PanDetector(), PhoneDetector(),
-    EmailDetector(), UpiDetector(), IfscDetector(),
+    EmailDetector(), UpiDetector(), IfscDetector(), ApiKeyDetector(),
+    CardNumberDetector(),
 ]

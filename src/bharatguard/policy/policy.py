@@ -16,6 +16,8 @@ DEFAULT_POLICY: dict[str, str] = {
     "UPI": "tokenize",
     "PERSON": "tokenize",
     "ADDRESS": "mask",
+    "API_KEY": "mask",
+    "CARD_NUMBER": "mask",
 }
 
 

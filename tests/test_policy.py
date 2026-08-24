@@ -13,6 +13,8 @@ def test_default_policy_mapping_exact():
         "UPI": "tokenize",
         "PERSON": "tokenize",
         "ADDRESS": "mask",
+        "API_KEY": "mask",
+        "CARD_NUMBER": "mask",
     }
 
 

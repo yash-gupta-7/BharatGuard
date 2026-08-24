@@ -4,7 +4,7 @@ from bharatguard.detectors.merge import merge_entities
 
 def test_no_overlap_keeps_all():
     entities = [
-        PIIEntity("AADHAAR", 0, 12, 0.9, "aadhaar_regex"),
+        PIIEntity("AADHAAR", 0, 12, 0.9, "aadhaar_regex_verhoeff"),
         PIIEntity("PAN", 20, 30, 0.95, "pan_regex"),
     ]
     result = merge_entities(entities)
@@ -44,7 +44,7 @@ def test_longer_span_wins_on_tie_confidence_and_tier():
 def test_sorted_by_start_offset():
     entities = [
         PIIEntity("PAN", 20, 30, 0.95, "pan_regex"),
-        PIIEntity("AADHAAR", 0, 12, 0.9, "aadhaar_regex"),
+        PIIEntity("AADHAAR", 0, 12, 0.9, "aadhaar_regex_verhoeff"),
     ]
     result = merge_entities(entities)
     assert [e.start for e in result] == [0, 20]
@@ -158,7 +158,7 @@ def test_output_invariant_to_input_order():
     depend on the order candidates were produced/appended in (i.e. must not
     depend on detector invocation order)."""
     base = [
-        PIIEntity("AADHAAR", 0, 12, 0.9, "aadhaar_regex"),
+        PIIEntity("AADHAAR", 0, 12, 0.9, "aadhaar_regex_verhoeff"),
         PIIEntity("ADDRESS", 5, 25, 0.6, "address_keyword"),
         PIIEntity("EMAIL", 10, 20, 0.9, "email_regex"),
         PIIEntity("PAN", 40, 50, 0.95, "pan_regex"),
@@ -178,3 +178,22 @@ def test_output_invariant_to_input_order():
     first = results[0]
     for r in results[1:]:
         assert r == first
+
+
+def test_aadhaar_source_is_classified_as_deterministic_tier():
+    # Regression test: _DETERMINISTIC_SOURCES previously listed the stale
+    # source name "aadhaar_regex" instead of the real AadhaarDetector's
+    # "aadhaar_regex_verhoeff" (added alongside the Verhoeff checksum), so
+    # Aadhaar entities were silently misclassified as contextual-tier. This
+    # never changed observed output only because Aadhaar's confidence
+    # (0.95) already exceeds every contextual detector's confidence -- but
+    # it defeated the intended "deterministic always beats contextual on
+    # overlap, regardless of confidence" invariant. Prove tier, not just
+    # confidence, decides the winner here: give the contextual entity a
+    # HIGHER confidence than the Aadhaar entity, and confirm Aadhaar still
+    # wins purely because of tier.
+    aadhaar = PIIEntity("AADHAAR", 0, 12, 0.5, "aadhaar_regex_verhoeff")
+    person = PIIEntity("PERSON", 0, 12, 0.99, "spacy_person")
+    result = merge_entities([aadhaar, person])
+    assert len(result) == 1
+    assert result[0].source == "aadhaar_regex_verhoeff"
